@@ -23,7 +23,7 @@
    node migrate.js
    ```
 
-1. If it everything worked, the `migrate.js` script should output something that looks like this:
+   If it everything worked, the `migrate.js` script should output something that looks like this:
 
    ```
    [ { id: '676c2560-455b-11e6-b3e2-f72b17ce0010',
