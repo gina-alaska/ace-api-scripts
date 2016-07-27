@@ -23,25 +23,15 @@
    node migrate.js
    ```
 
-   If it everything worked, the `migrate.js` script should output something that looks like this:
+   If everything worked, the `migrate.js` script should output something like this:
 
    ```
-   [ { id: '676c2560-455b-11e6-b3e2-f72b17ce0010',
-    userId: '676aece0-455b-11e6-b3e2-f72b17ce0010',
-    positionId: '676bd740-455b-11e6-b3e2-f72b17ce0010',
-    cloudCover: '1/8th',
-    precipitation: 'Light Rain',
-    visibility: 'Mist',
-    pressureTendency: null,
-    pressureValue: null,
-    temperatureValue: '59',
-    temperatureUnits: ' ºF ',
-    windValue: null,
-    windUnits: null,
-    windDirection: null,
-    notes: null,
-    other: null,
-    attachment: null } ]
+   Timestamp: 2016-06-08T20:19:04.151Z
+   Latitude: 64.8592668
+   Longitude: -147.8511062
+   Cloud Cover: 1/8th
+   Precipitation: Light Rain
+   Visibility: Mist
    ```
 
-   This means `migrate.js` successfully logged into LoopBack and pulled out the one dummy weather report record (in JSON format).
+   This means `migrate.js` successfully logged into LoopBack and pulled out the one dummy weather report.
