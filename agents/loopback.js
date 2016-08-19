@@ -37,7 +37,12 @@ module.exports = function loopback(url) {
   function get(loopbackPath) {
     // Promise resolves with array of results from GET operation.
     return new Promise(function (resolve, reject) {
-      var url = baseUrl + loopbackPath + '?access_token=' + token;
+      if(loopbackPath.indexOf('?') === -1) {
+        var url = baseUrl + loopbackPath + '?access_token=' + token;
+      } else {
+        var url = baseUrl + loopbackPath + '&access_token=' + token;
+      }
+
       rest.get(url)
         .then(function (response) {
           resolve(response);
