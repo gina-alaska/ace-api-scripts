@@ -4,7 +4,11 @@
   "description": "",
   "main": "migrate.js",
   "dependencies": {
-    "restler-q": "^0.1.1"
+    "async": "^2.0.1",
+    "fs": "0.0.2",
+    "request": "^2.74.0",
+    "restler-q": "^0.1.1",
+    "tmp": "0.0.28"
   },
   "devDependencies": {},
   "scripts": {

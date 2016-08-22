@@ -1,35 +1,80 @@
-// Include the custom LoopBack agent module.
+var async = require('async');
+var request = require('request');
+var fs = require('fs');
+var tmp = require('tmp');
 var loopback = require('./agents/loopback.js');
 
-// Declare a new LoopBack agent with your local LoopBack API URL.
-var loopbackAgent = new loopback('http://localhost:3000/api');
+var adminAgent = new loopback('http://localhost:3000/api');
+var ckanPackageUrl = 'http://localhost:5000/api/action/package_create';
+var ckanResourceUrl = 'http://localhost:5000/api/3/action/resource_create';
 
-// Initialize the LoopBack agent by logging in to the /MobileUsers
-// endpoint. The LoopBack agent will save the authentication token
-// internally for use in all subsequent requests.
-loopbackAgent.initialize('/MobileUsers/login', {
-  'username': 'testuser',
+var sinceDate = process.argv[2]
+
+function ckanUpload(packageName, resourceName, geoJson, groupId, apiKey, callback) {
+  var authHeader = { 'Authorization' : apiKey };
+
+  tmp.file(function (err, path, fd, cleanup) {
+    if (err) throw err;
+    fs.appendFile(path, JSON.stringify(geoJson));
+
+    var formData = {
+      name: resourceName,
+      description: resourceName,
+      package_id: packageName,
+      owner_org: groupId,
+      url: 'http://placeholder.url',
+      format: 'geojson',
+      upload: fs.createReadStream(path)
+    }
+
+    var packageDetails = {
+      name: packageName,
+      notes: '',
+      state: 'active',
+      owner_org: groupId
+    }
+
+    var packageRequest = {
+      url: ckanPackageUrl,
+      headers: authHeader,
+      method: 'POST',
+      json: packageDetails
+    };
+
+    var resourceRequest = {
+      url: ckanResourceUrl,
+      headers: authHeader,
+      method: 'POST',
+      formData: formData
+    };
+
+    request(packageRequest, function(error, response, body) {
+      if (error) { return console.error('Request Failed:', error); }
+      request(resourceRequest, function(error, response, body) {
+        if (error) { return console.error('Request Failed:', error); }
+        callback();
+      });
+    });
+  });
+}
+
+adminAgent.initialize('/MobileUsers/login', {
+  'username': 'admin',
   'password': 'password'
 })
   .then(function () {
-    // The asynchronous loopbackAgent.initialize() task has finished.
-    //
-    // Download all weather reports using the GET operation on
-    // LoopBack's /WeatherReports endpoint. You can see that your
-    // local LoopBack API supports the GET operation on the
-    // /WeatherReports endpoint via the "Explorer" interface at:
-    // http://localhost:3000/explorer/
-    return loopbackAgent.get('/WeatherReports/with-positions');
+    return adminAgent.get('/MobileUsers?filter[where][username][neq]=admin');
   })
-  .then(function (results) {
-    // The asynchronous loopbackAgent.get() task has finished.
-    //
-    // Output the results of the GET operation.
-    console.log('Timestamp: ' + results.WeatherReports[0].Position.timestamp);
-    console.log('Latitude: ' + results.WeatherReports[0].Position.latlng.lat);
-    console.log('Longitude: ' + results.WeatherReports[0].Position.latlng.lng);
-    console.log('Cloud Cover: ' + results.WeatherReports[0].cloudCover);
-    console.log('Precipitation: ' + results.WeatherReports[0].precipitation);
-    console.log('Visibility: ' + results.WeatherReports[0].visibility);
-    // Etc.
+  .then(function (users) {
+    return async.eachLimit(users, 3, function (user, callback) {
+      adminAgent.get('/WeatherReports/with-positions?userId=' + user.id + '&date=' + sinceDate)
+        .then(function (reports) {
+          async.eachLimit(reports, 3, function (report, callback) {
+            ckanUpload(sinceDate, user.username, report, user.groupId, user.apikey, callback);
+          });
+        });
+    });
+  })
+  .catch(function (err) {
+    if (err) throw err;
   });
