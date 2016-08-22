@@ -8,72 +8,75 @@ var adminAgent = new loopback('http://localhost:3000/api');
 var ckanPackageUrl = 'http://localhost:5000/api/action/package_create';
 var ckanResourceUrl = 'http://localhost:5000/api/3/action/resource_create';
 
-var sinceDate = process.argv[2]
+var startDate = process.argv[2];
+var endDate = process.argv[3]
 
-function ckanUpload(packageName, resourceName, geoJson, groupId, apiKey, callback) {
+function ckanUpload(groupId, packageName, resourceName, geoJson, apiKey) {
   var authHeader = { 'Authorization' : apiKey };
 
-  tmp.file(function (err, path, fd, cleanup) {
-    if (err) throw err;
-    fs.appendFile(path, JSON.stringify(geoJson));
+  var tmpobj = tmp.dirSync();
+  var filePath = tmpobj.name + '/data.json';
+  fs.appendFile(filePath, JSON.stringify(geoJson));
 
-    var formData = {
-      name: resourceName,
-      description: resourceName,
-      package_id: packageName,
-      owner_org: groupId,
-      url: 'http://placeholder.url',
-      format: 'geojson',
-      upload: fs.createReadStream(path)
-    }
+  var formData = {
+    name: resourceName,
+    description: resourceName,
+    package_id: packageName,
+    owner_org: groupId,
+    url: 'http://placeholder.url',
+    format: 'geojson',
+    upload: fs.createReadStream(filePath)
+  }
 
-    var packageDetails = {
-      name: packageName,
-      notes: '',
-      state: 'active',
-      owner_org: groupId
-    }
+  var packageDetails = {
+    name: packageName,
+    notes: '',
+    state: 'active',
+    owner_org: groupId
+  }
 
-    var packageRequest = {
-      url: ckanPackageUrl,
-      headers: authHeader,
-      method: 'POST',
-      json: packageDetails
-    };
+  var packageRequest = {
+    url: ckanPackageUrl,
+    headers: authHeader,
+    method: 'POST',
+    json: packageDetails
+  };
 
-    var resourceRequest = {
-      url: ckanResourceUrl,
-      headers: authHeader,
-      method: 'POST',
-      formData: formData
-    };
+  var resourceRequest = {
+    url: ckanResourceUrl,
+    headers: authHeader,
+    method: 'POST',
+    formData: formData
+  };
 
-    request(packageRequest, function(error, response, body) {
+  request(packageRequest, function(error, response, body) {
+    if (error) { return console.error('Request Failed:', error); }
+    request(resourceRequest, function(error, response, body) {
       if (error) { return console.error('Request Failed:', error); }
-      request(resourceRequest, function(error, response, body) {
-        if (error) { return console.error('Request Failed:', error); }
-        callback();
-      });
+      fs.unlinkSync(filePath);
     });
   });
 }
 
+var ckanAdminKey;
 adminAgent.initialize('/MobileUsers/login', {
   'username': 'admin',
   'password': 'password'
 })
   .then(function () {
-    return adminAgent.get('/MobileUsers?filter[where][username][neq]=admin');
+    return adminAgent.get('/MobileUsers?filter[where][username]=admin');
   })
   .then(function (users) {
-    return async.eachLimit(users, 3, function (user, callback) {
-      adminAgent.get('/WeatherReports/with-positions?userId=' + user.id + '&date=' + sinceDate)
+    ckanAdminKey = users[0].apikey;
+    return adminAgent.get('/Groups');
+  })
+  .then(function (groups) {
+    groups.forEach(function (group) {
+      return adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate)
         .then(function (reports) {
-          async.eachLimit(reports, 3, function (report, callback) {
-            ckanUpload(sinceDate, user.username, report, user.groupId, user.apikey, callback);
-          });
+          ckanUpload(group.id, startDate, "Weather Reports", reports, ckanAdminKey);
         });
-    });
+    })
   })
   .catch(function (err) {
     if (err) throw err;
