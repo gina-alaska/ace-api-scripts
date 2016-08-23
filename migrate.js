@@ -2,6 +2,7 @@ var async = require('async');
 var request = require('request');
 var fs = require('fs');
 var tmp = require('tmp');
+var GeoJSON = require('geojson');
 var loopback = require('./agents/loopback.js');
 
 var adminAgent = new loopback('http://localhost:3000/api');
@@ -11,11 +12,46 @@ var ckanResourceUrl = 'http://localhost:5000/api/3/action/resource_create';
 var startDate = process.argv[2];
 var endDate = process.argv[3]
 
+function createGeoJson(reports) {
+  var points = [];
+  reports.forEach(function (report) {
+    var point = {
+      lat: report.Position.latlng.lat,
+      lng: report.Position.latlng.lng
+    };
+
+    var publicProperties = [
+      'cloudCover',
+      'precipitation',
+      'visibility',
+      'pressureTendency',
+      'pressureValue',
+      'temperatureValue',
+      'temperatureUnits',
+      'windValue',
+      'windUnits',
+      'windDirection',
+      'notes',
+      'other'
+    ]
+
+    publicProperties.forEach(function (key) {
+      if(report[key] && report[key].length > 0) {
+        point[key] = report[key];
+      }
+    });
+
+    points.push(point);
+  });
+
+  return GeoJSON.parse(points, {Point: ['lat', 'lng']});
+}
+
 function ckanUpload(group, resourceName, geoJson, apiKey) {
   var authHeader = { 'Authorization' : apiKey };
 
   var tmpobj = tmp.dirSync();
-  var filePath = tmpobj.name + '/data.json';
+  var filePath = tmpobj.name + '/data.geojson';
   fs.appendFile(filePath, JSON.stringify(geoJson));
 
   var safeGroupName = group.name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -77,7 +113,8 @@ adminAgent.initialize('/MobileUsers/login', {
     groups.forEach(function (group) {
       return adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate)
         .then(function (reports) {
-          ckanUpload(group, "Weather Reports", reports, ckanAdminKey);
+          var geoJson = createGeoJson(reports.WeatherReports);
+          ckanUpload(group, "Weather Reports", geoJson, ckanAdminKey);
         });
     })
   })
