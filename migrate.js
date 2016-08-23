@@ -11,18 +11,21 @@ var ckanResourceUrl = 'http://localhost:5000/api/3/action/resource_create';
 var startDate = process.argv[2];
 var endDate = process.argv[3]
 
-function ckanUpload(groupId, packageName, resourceName, geoJson, apiKey) {
+function ckanUpload(group, resourceName, geoJson, apiKey) {
   var authHeader = { 'Authorization' : apiKey };
 
   var tmpobj = tmp.dirSync();
   var filePath = tmpobj.name + '/data.json';
   fs.appendFile(filePath, JSON.stringify(geoJson));
 
+  var safeGroupName = group.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  var packageName = safeGroupName + '_' + startDate;
+
   var formData = {
     name: resourceName,
     description: resourceName,
     package_id: packageName,
-    owner_org: groupId,
+    owner_org: group.id,
     url: 'http://placeholder.url',
     format: 'geojson',
     upload: fs.createReadStream(filePath)
@@ -32,7 +35,7 @@ function ckanUpload(groupId, packageName, resourceName, geoJson, apiKey) {
     name: packageName,
     notes: '',
     state: 'active',
-    owner_org: groupId
+    owner_org: group.id
   }
 
   var packageRequest = {
@@ -74,7 +77,7 @@ adminAgent.initialize('/MobileUsers/login', {
     groups.forEach(function (group) {
       return adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate)
         .then(function (reports) {
-          ckanUpload(group.id, startDate, "Weather Reports", reports, ckanAdminKey);
+          ckanUpload(group, "Weather Reports", reports, ckanAdminKey);
         });
     })
   })
