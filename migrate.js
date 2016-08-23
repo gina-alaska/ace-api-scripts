@@ -54,8 +54,9 @@ function ckanUpload(group, resourceName, geoJson, apiKey) {
   var filePath = tmpobj.name + '/data.geojson';
   fs.appendFile(filePath, JSON.stringify(geoJson));
 
+  var packageTitle = 'Weather Reports from ' + startDate + ' to ' + endDate + ' (' + group.name + ')';
   var safeGroupName = group.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  var packageName = safeGroupName + '_' + startDate;
+  var packageName = safeGroupName + '_' + startDate + '_' + endDate;
 
   var formData = {
     name: resourceName,
@@ -69,6 +70,7 @@ function ckanUpload(group, resourceName, geoJson, apiKey) {
 
   var packageDetails = {
     name: packageName,
+    title: packageTitle,
     notes: '',
     state: 'active',
     owner_org: group.id
