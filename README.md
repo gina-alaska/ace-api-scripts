@@ -10,7 +10,7 @@ Before you can use this script, you will need:
 
 1. A CKAN server running with the [ckanext-loopback](https://github.com/gina-alaska/ckanext-loopback) extension to synchronize CKAN user accounts and organizations with the LoopBack server.
 
-1. The [ACE mobile app](https://github.com/ua-snap/ace-cordova-app), to log into CKAN/LoopBack accounts and the submit weather report data to LoopBack, which this script will then copy into CKAN as GeoJSON files.
+1. The [ACE mobile app](https://github.com/ua-snap/ace-cordova-app), to log into CKAN/LoopBack accounts and submit weather report data to LoopBack, which this script will then copy into CKAN as GeoJSON files.
 
 ## Installation
 
