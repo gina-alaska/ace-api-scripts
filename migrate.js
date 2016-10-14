@@ -52,7 +52,7 @@ function ckanUpload(group, resourceName, geoJson, apiKey) {
 
   var tmpobj = tmp.dirSync();
   var filePath = tmpobj.name + '/data.geojson';
-  fs.appendFile(filePath, JSON.stringify(geoJson));
+  fs.appendFileSync(filePath, JSON.stringify(geoJson));
 
   var packageTitle = 'Weather Reports from ' + startDate + ' to ' + endDate + ' (' + group.name + ')';
   var safeGroupName = group.name.toLowerCase().replace(/[^a-z0-9]/g, '');
