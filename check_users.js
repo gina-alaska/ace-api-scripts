@@ -2,8 +2,8 @@ var request = require('request-promise');
 var underscore = require('underscore');
 var loopback = require('./agents/loopback.js');
 
-var adminAgent = new loopback('https://dry-oasis-77144.herokuapp.com/api');
-var ckanUserListUrl = 'http://localhost:5000/api/action/user_list';
+var adminAgent = new loopback('https://loopback/api');
+var ckanUserListUrl = 'http://ckan/api/action/user_list';
 
 var ckanAdminKey;
 var ckanAdminId;

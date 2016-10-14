@@ -5,9 +5,9 @@ var tmp = require('tmp');
 var GeoJSON = require('geojson');
 var loopback = require('./agents/loopback.js');
 
-var adminAgent = new loopback('http://localhost:3000/api');
-var ckanPackageUrl = 'http://localhost:5000/api/action/package_create';
-var ckanResourceUrl = 'http://localhost:5000/api/3/action/resource_create';
+var adminAgent = new loopback('https://loopback/api');
+var ckanPackageUrl = 'http://ckan/api/action/package_create';
+var ckanResourceUrl = 'http://ckan/api/3/action/resource_create';
 
 var startDate = process.argv[2];
 var endDate = process.argv[3]
