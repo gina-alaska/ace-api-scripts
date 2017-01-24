@@ -8,6 +8,7 @@ var loopback = require('./agents/loopback.js');
 var adminAgent = new loopback('https://loopback/api');
 var ckanPackageUrl = 'http://ckan/api/action/package_create';
 var ckanResourceUrl = 'http://ckan/api/3/action/resource_create';
+var ckanAdminKey = '';
 
 var startDate = process.argv[2];
 var endDate = process.argv[3]
@@ -99,16 +100,11 @@ function ckanUpload(group, resourceName, geoJson, apiKey) {
   });
 }
 
-var ckanAdminKey;
 adminAgent.initialize('/MobileUsers/login', {
   'username': 'admin',
   'password': 'password'
 })
-  .then(function () {
-    return adminAgent.get('/MobileUsers?filter[where][username]=admin');
-  })
   .then(function (users) {
-    ckanAdminKey = users[0].apikey;
     return adminAgent.get('/Groups');
   })
   .then(function (groups) {
