@@ -43,7 +43,7 @@ module.exports = function loopback(url) {
         var url = baseUrl + loopbackPath + '&access_token=' + token;
       }
 
-      rest.get(url)
+      rest.get(url, {'decoding': 'binary'})
         .then(function (response) {
           resolve(response);
         })

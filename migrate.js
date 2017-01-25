@@ -3,6 +3,7 @@ var request = require('request');
 var fs = require('fs');
 var tmp = require('tmp');
 var GeoJSON = require('geojson');
+var url = require('url');
 var loopback = require('./agents/loopback.js');
 
 var adminAgent = new loopback('https://loopback/api');
@@ -48,12 +49,18 @@ function createGeoJson(reports) {
   return GeoJSON.parse(points, {Point: ['lat', 'lng']});
 }
 
-function ckanUpload(group, resourceName, geoJson, apiKey) {
-  var authHeader = { 'Authorization' : apiKey };
+function ckanUpload(group, resourceName, fileName, fileContents) {
+  var authHeader = { 'Authorization' : ckanAdminKey };
 
   var tmpobj = tmp.dirSync();
-  var filePath = tmpobj.name + '/data.geojson';
-  fs.appendFileSync(filePath, JSON.stringify(geoJson));
+  var filePath = tmpobj.name + '/' + fileName;
+  var fileExtension = fileName.split('.').pop();
+
+  if(fileExtension === 'geojson') {
+    fs.appendFileSync(filePath, JSON.stringify(fileContents));
+  } else {
+    fs.appendFileSync(filePath, fileContents, 'binary');
+  }
 
   var packageTitle = 'Weather Reports from ' + startDate + ' to ' + endDate + ' (' + group.name + ')';
   var safeGroupName = group.name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -65,7 +72,7 @@ function ckanUpload(group, resourceName, geoJson, apiKey) {
     package_id: packageName,
     owner_org: group.id,
     url: 'http://placeholder.url',
-    format: 'geojson',
+    format: fileExtension,
     upload: fs.createReadStream(filePath)
   }
 
@@ -111,8 +118,33 @@ adminAgent.initialize('/MobileUsers/login', {
     groups.forEach(function (group) {
       return adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate)
         .then(function (reports) {
+          var regex = new RegExp('^/api(.*?([^\/]+))$');
+          reports.WeatherReports.forEach(function (report) {
+            var attachmentUrl = url.parse(report.attachment);
+
+            var matches;
+            if(matches = attachmentUrl.pathname.match(regex)) {
+                var filePath = matches[1];
+                var fileName = matches[2];
+                var fileExtension = fileName.split('.').pop();
+
+                // Put coordinates and date in image and video filenames.
+                // TODO: Find a better way to do this. Using KML to geolocate
+                // media files might be a good option.
+                var lat = report.Position.latlng.lat;
+                var lng = report.Position.latlng.lng;
+                var date = new Date(report.Position.timestamp).toISOString().slice(0, 10);
+                var newFileName = lat + '-' + lng + '-' + date + '.' + fileExtension;
+
+                adminAgent.get(filePath)
+                  .then(function (fileContent) {
+                    ckanUpload(group, "Weather Reports", newFileName, fileContent);
+                  });
+            }
+            adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate);
+          });
           var geoJson = createGeoJson(reports.WeatherReports);
-          ckanUpload(group, "Weather Reports", geoJson, ckanAdminKey);
+          ckanUpload(group, "Weather Reports", 'data.geojson', geoJson);
         });
     })
   })
