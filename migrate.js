@@ -118,7 +118,12 @@ adminAgent.initialize('/MobileUsers/login', {
     groups.forEach(function (group) {
       return adminAgent.get('/WeatherReports/with-positions?groupId=' + group.id + '&startdate=' + startDate + '&enddate=' + endDate)
         .then(function (reports) {
+
+          // Capture two things we need:
+          // 1. API path to download the media file.
+          // 2. The filename of this file.
           var regex = new RegExp('^/api(.*?([^\/]+))$');
+
           reports.WeatherReports.forEach(function (report) {
             var attachmentUrl = url.parse(report.attachment);
 
@@ -128,12 +133,18 @@ adminAgent.initialize('/MobileUsers/login', {
                 var fileName = matches[2];
                 var fileExtension = fileName.split('.').pop();
 
-                // Put coordinates and date in image and video filenames.
-                // TODO: Find a better way to do this. Using KML to geolocate
-                // media files might be a good option.
                 var lat = report.Position.latlng.lat;
                 var lng = report.Position.latlng.lng;
+
+                // This converts the timestamp from LoopBack into a simple
+                // YYYY-MM-DD date string that can be included in file names.
                 var date = new Date(report.Position.timestamp).toISOString().slice(0, 10);
+
+                // TODO: Find a better way to tie coordinates and times to
+                // media files. Building a separate KML file to store this
+                // metadata seems like a good option. Putting this metadata
+                // directly in the filename should be considered a temporary
+                // stopgap solution and not suitable for production.
                 var newFileName = lat + '-' + lng + '-' + date + '.' + fileExtension;
 
                 adminAgent.get(filePath)
